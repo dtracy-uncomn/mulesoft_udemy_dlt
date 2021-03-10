@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="classpathFileRead" doc:id="54c6f2c2-9a37-4267-addc-8c83cbd219e6" >
+		<ee:transform doc:name="read file" doc:id="39f857a4-bc3f-4ba6-b021-4c6a43c1dc8f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+	readUrl("classpath://peoplenames.json")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="define metadata type" doc:id="9a9a46b0-cfb9-4340-a464-633abbba5ee3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+ payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="3.dataweaveFlow" doc:id="a92055cf-a7ef-4640-8dcc-ee640ed430fd" >
+		<http:listener doc:name="HTTP Post" doc:id="f8670293-ab3e-4a81-9177-3d166d162833" config-ref="HTTP_Listener_config" path="/lambdas" allowedMethods="POST"/>
+		<ee:transform doc:name="declare and invoke a function" doc:id="0a855edc-1dcc-4428-84dc-5a1010846409" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+fun createString(obj) = {
+		description: obj.field1 ++ " " ++ obj.field2 ++ " " ++ obj.field3
+}
+
+output application/json
+---
+{
+"root": createString(payload)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="5ec8cf74-8435-43d1-8e20-70aec1dc633a" message="payload"/>
+		<ee:transform doc:name="use named parameters in lambda function" doc:id="11b187fa-3027-4022-9813-bdbcb23af618" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var customArray = [1,2,3,4,5,6]
+output application/json
+---
+{
+		"collection": customArray map ((number) ->	
+			(number*100)
+		)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3ea164e0-004a-4344-b928-8ac8675fff25" message="#[payload]"/>
+		<ee:transform doc:name="use lambda default arguments" doc:id="5a98f50c-ca0d-4cd2-ae97-7f850f40d6a3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var customArray = ["a","Mulesoft","course","string"]
+
+output application/json
+---
+	"collection": customArray map (
+       "$$" : $
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
